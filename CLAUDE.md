@@ -1,7 +1,7 @@
 # Visão Geral
 
 Automação E2E + API Testing para **Assistente Inteligente de Fluxo de Caixa para PJ**.
-Stack: Java/Spring Boot (backend), Angular (frontend), PostgreSQL, IA (CWI Rocket).
+Stack: Java/Spring Boot (backend), Angular (frontend), PostgreSQL, IA (CWI CLAUDE).
 Time: Rafael Garcia, Mateus Junior.
 *Nota: Arquitetura em estruturação. Nomes de arquivos podem ser temporários.*
 
@@ -10,11 +10,11 @@ Time: Rafael Garcia, Mateus Junior.
 - **Linguagem**: JavaScript (ES Modules, `import/export` obrigatório, sem `require`)
 - **Dados**: @faker-js/faker
 - **DB**: pg (node-postgres)
-- **Relatórios**: Allure e Playwright HTML
+- **Relatórios**: Playwright HTML
 - **JWT**: jwt-decode
 
 ## Estrutura Alvo (Padrão)
-- `ROCKET.md`: Spec viva (fonte da verdade)
+- `CLAUDE.md`: Spec viva (fonte da verdade)
 - `pages/`: Page Objects (só frontend: `[tela].page.js`)
 - `services/`: Service Objects (API/DB: `[recurso].service.js`)
 - `fixtures/`: Setup Playwright (`frontend.fixture.js`, `api.fixture.js`)
@@ -74,6 +74,27 @@ Usar sempre o seletor mais alto na hierarquia disponível. Declarar no `construc
 4. Priorize seletor `data-testid`.
 5. Última etapa do teste visual tira screenshot em `test-results/evidencias/...` se necessário.
 
+## Validações de Erro
+
+- **PROIBIDO**: assertar texto literal de mensagem de erro (`toContainText('has already been taken')`).
+- Mensagens são implementação do backend — mudam sem aviso e quebram testes por razão errada.
+- **CORRETO**: validar o **estado observável** — o elemento de feedback está visível E o usuário continua na mesma página (não foi redirecionado).
+
+```js
+// ✅ correto — valida o que importa funcionalmente
+async validarErroExibido() {
+  await expect(this.feedbackErros).toBeVisible();
+  await expect(this.page).toHaveURL('/register');
+}
+
+// ❌ errado — frágil, quebra se o wording mudar
+async validarMensagemErro(mensagem) {
+  await expect(this.feedbackErros).toContainText(mensagem);
+}
+```
+
+- Exceção aceitável: validar texto **somente** quando o requisito é exatamente a mensagem exibida (ex: erro de formato de e-mail vs. e-mail duplicado precisam ser distinguidos no mesmo campo).
+
 ## Esperas (Timeouts)
 - **PROIBIDO**: `waitForTimeout` ou delays explícitos chumbeados.
 - **PERMITIDO**: Esperas via estado DOM observável.
@@ -117,6 +138,21 @@ Usar sempre o seletor mais alto na hierarquia disponível. Declarar no `construc
 - Pages aceitam objeto `page`, services de API aceitam argumento `request`.
 - Lifecycle Services DB requer `conectar`, `usar`, `desconectar`.
 
+## Nomenclatura de Fixtures e Chaves de Dados
+
+| Tipo | Padrão | Exemplo |
+|---|---|---|
+| Fixture de page | `[tela]Page` | `registerPage`, `loginPage` |
+| Import de dados no spec | `dados[Tela]` | `dadosRegister`, `dadosLogin` |
+| Chave de caso válido | `valido` | `dadosRegister.valido` |
+| Chave de conjunto parametrizado | `[dominio][Cenário]` | `conflitoCadastro`, `erroLogin` |
+| Entrada dentro de conjunto | `{ descricao, dadosTeste }` | — |
+
+- Dados são importados diretamente no spec (`import dadosRegister from './data/register.data.js'`), não via fixture.
+- Fixtures carregam apenas pages e estado de contexto (ex: conta autenticada).
+- Nunca use nomes genéricos como `dados`, `casos` ou `lista`.
+- O nome deve comunicar domínio: `conflitoCadastro` deixa claro que são dados que causam conflito no cadastro.
+
 ## Setup de Contextos
 - `contaAutenticada` por exemplo: cria registro, executa login em background silencioso e injeta os ids no escopo do teste logado isoladamente do teste do worker par.
 - Não substituem resources (pages/services), entregam contexto.
@@ -127,10 +163,34 @@ Usar sempre o seletor mais alto na hierarquia disponível. Declarar no `construc
 
 ## Regras de Testes (`*.spec.js`)
 - Testes orquestram steps de chamadas de interfaces/services limpas. Apenas define a intenção do fluxo.
-- ZERO lógica: sem `if`/`for` a rodo, mock inline, construtor de selectors `page.locator()` inline, montadores complexos. Tudo em PO/SO/Fixtures.
+- ZERO lógica solta: sem `if`, sem mock inline, sem `page.locator()` inline, sem montadores complexos. Tudo em PO/SO/Fixtures.
 - ZERO `expect` no arquivo de spec. 100% das asserções devem ser encapsuladas nos Page Objects ou Service Objects (ex: `await loginPage.validarMensagemSucesso()`).
 - Sempre importar `{ test }` do arquivo `.fixture.js`, nunca direto do npm `@playwright`.
 - Hierarquia via `describe()`. Para workflows grandes em APIs iterativas, fragmentar via `test.step()`.
+
+### `for` fora do `test()` — testes parametrizados
+Quando múltiplos casos testam **o mesmo comportamento com dados diferentes**, use um `for` **dentro do `describe()` mas fora do `test()`**. Cada iteração gera um `test()` independente com nome descritivo — o Playwright recomenda esse padrão pois cada caso vira uma entrada separada no relatório, com retry, trace e screenshot próprios.
+
+Os dados do loop devem ser importados **diretamente no spec** no nível de módulo (fixtures não estão acessíveis fora de `test()`).
+
+```js
+import dadosRegister from './data/register.data.js';
+
+test.describe('Register', () => {
+  test.beforeEach(async ({ registerPage }) => {
+    await registerPage.abrirPagina(); // roda para cada test gerado pelo for
+  });
+
+  for (const { descricao, dadosTeste } of dadosRegister.conflitoCadastro) {
+    test(`deve exibir erro ao tentar cadastrar — ${descricao}`, async ({ registerPage }) => {
+      await registerPage.cadastrar(dadosTeste);
+      await registerPage.validarErroExibido();
+    });
+  }
+});
+```
+
+> **Regra**: `for` parametrizador fica dentro de `describe()`, nunca dentro de `test()`. Dados de loop vêm de import direto no spec, não de fixture. `beforeEach` já é reaproveitado automaticamente por cada test gerado.
 
 ## Massa de Dados (`*.data.js`)
 - Previsibilidade total.
@@ -154,7 +214,7 @@ Tabelas em PostgreSQL: `empresa`, `usuario`, `categoria`, `transacao`, `auditori
 # Regras Agente IA
 
 ## Permissões e Escopo
-- **Escopo Restrito:** Aja SÓ na exata tarefa exigida. Sem devaneios/refatorações colaterais se não ditas. Priorizar infraestrutura/padrão vigente da source (ROCKET.md).
+- **Escopo Restrito:** Aja SÓ na exata tarefa exigida. Sem devaneios/refatorações colaterais se não ditas. Priorizar infraestrutura/padrão vigente da source (CLAUDE.md).
 - **Ações Proibidas (sem aprovação via chat):** instanciar novas dependências, criar pastas exóticas de pattern estranho ao fixado, refatorar código legado em lote sem request formal via user manual, comittar no git.
 
 ## Fluxo
