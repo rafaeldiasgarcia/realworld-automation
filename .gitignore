@@ -1,0 +1,43 @@
+# IDEs
+.idea/
+.vscode/
+*.iml
+*.suo
+*.user
+
+# Java / Gradle
+build/
+.gradle/
+*.class
+*.jar
+!gradle-wrapper.jar
+out/
+
+# Node / Bun
+node_modules/
+dist/
+
+# Playwright
+test-results/
+playwright-report/
+allure-results/
+allure-report/
+blob-report/
+
+# Env
+.env
+.env.*
+*.local
+
+# Database
+*.db
+*.sqlite
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+logs/
