@@ -8,15 +8,25 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: [['html']],
   use: {
-    baseURL: 'http://localhost:4200',
     trace: 'on',
     screenshot: 'on',
     video: 'on-first-retry',
   },
   projects: [
     {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      name: 'frontend',
+      testDir: './tests/frontend',
+      use: {
+        ...devices['Desktop Chrome'],
+        baseURL: 'http://localhost:4200',
+      },
+    },
+    {
+      name: 'api',
+      testDir: './tests/api',
+      use: {
+        baseURL: 'http://localhost:8080',
+      },
     },
   ],
 });
