@@ -249,6 +249,12 @@ Tabelas em PostgreSQL: `empresa`, `usuario`, `categoria`, `transacao`, `auditori
 4. Codar obedecendo aos preceitos rigorosamente.
 5. Sumarizar na entrega.
 
+## Git — Fluxo de Entrega
+- **NUNCA** commitar direto na `master`.
+- Criar branch com prefixo semântico: `feat/`, `fix/`, `chore/`, `docs/`.
+- Commitar na branch e abrir Pull Request via `gh pr create`.
+- O usuário revisa e mergeia manualmente.
+
 ## Checklist Faça / N.F
 - **Fazer:** Reuso maciço. Termos aportuguesados. Locators limitados ao `constructor` de pages. Services com controle restrito a calls HTTP. `import/export`. Retries de db via `toPass()`.
 - **NÃO Fazer:** Misturar specs/dados. Espalhar `page.locator()` nos function scopes. `require(x)`. Timeouts Fixos (`waitForTimeout`) (proibidíssimos!). Colocar fetch API no `[x].page.js`.
