@@ -8,6 +8,8 @@ export class ProfilePage {
         this.fotoPerfil = page.locator('img.user-img');
         this.bio = page.locator('.user-info p');
         this.botaoEditarPerfil = page.getByRole('link', {name: 'Edit Profile Settings'});
+        this.botaoSeguir = page.getByRole('button', {name: /^Follow/});
+        this.botaoNaoSeguir = page.getByRole('button', {name: /^Unfollow/});
         this.abaMyPosts = page.getByRole('link', {name: 'My Posts'});
         this.abaFavoritedPosts = page.getByRole('link', {name: 'Favorited Posts'});
     }
@@ -34,5 +36,23 @@ export class ProfilePage {
     async navegarParaPostsFavoritos() {
         await this.abaFavoritedPosts.click();
         await expect(this.page).toHaveURL(/\/profile\/.+\/favorites$/);
+    }
+
+    async seguirUsuario() {
+        await this.botaoSeguir.click();
+    }
+
+    async deixarDeSeguirUsuario() {
+        await this.botaoNaoSeguir.click();
+    }
+
+    async validarSeguindo() {
+        await expect(this.botaoNaoSeguir).toBeVisible();
+        await expect(this.botaoSeguir).not.toBeVisible();
+    }
+
+    async validarNaoSeguindo() {
+        await expect(this.botaoSeguir).toBeVisible();
+        await expect(this.botaoNaoSeguir).not.toBeVisible();
     }
 }
