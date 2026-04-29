@@ -1,4 +1,5 @@
 import {test as base, expect} from '@playwright/test';
+import {faker} from '@faker-js/faker';
 import {RegisterPage} from '../pages/register.page.js';
 import {LoginPage} from '../pages/login.page.js';
 import {NavbarPage} from '../pages/navbar.page.js';
@@ -29,6 +30,16 @@ export const test = base.extend({
 
     dadosLogin: async ({}, use) => {
         await use(dadosLogin);
+    },
+
+    // Cria um usuário aleatório via API para testes que precisam de um segundo usuário
+    outroUsuario: async ({request}, use) => {
+        const username = `test${faker.string.alphanumeric(8)}`;
+        const response = await request.post('http://localhost:8080/users', {
+            data: {user: {username, email: faker.internet.email(), password: 'Test@1234'}},
+        });
+        const {user} = await response.json();
+        await use(user);
     },
 
     // Loga via API e injeta o token no localStorage antes de qualquer navegação

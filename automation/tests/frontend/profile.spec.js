@@ -21,4 +21,17 @@ test.describe('Profile', {tag: ['@frontend']}, () => {
         await profilePage.abrirPagina(contaAutenticada.username);
         await profilePage.navegarParaPostsFavoritos();
     });
+
+    test('deve seguir outro usuário', {tag: ['@regressao']}, async ({profilePage, contaAutenticada, outroUsuario}) => {
+        await profilePage.abrirPagina(outroUsuario.username);
+        await profilePage.seguirUsuario();
+        await profilePage.validarSeguindo();
+    });
+
+    test('deve deixar de seguir outro usuário', {tag: ['@regressao']}, async ({profilePage, contaAutenticada, outroUsuario}) => {
+        await profilePage.abrirPagina(outroUsuario.username);
+        await profilePage.seguirUsuario();
+        await profilePage.deixarDeSeguirUsuario();
+        await profilePage.validarNaoSeguindo();
+    });
 });
