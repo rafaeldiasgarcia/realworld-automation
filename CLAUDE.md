@@ -31,13 +31,17 @@ Time: Rafael Garcia, Mateus Junior.
 
 ## Regras Gerais
 - Playwright com ES Modules (`import/export` exclusivamente).
-- Idioma principal: **Português do Brasil** (funções, variáveis, arquivos, testes).
+- Métodos, variáveis e descrições de testes em **Português do Brasil**.
 - Sintaxe e APIs da linguagem obrigatoriamente em inglês.
+- **Nomes de arquivos, classes e fixtures seguem a terminologia exata do projeto** — não traduzir.
+  - Frontend: usa a rota da página. Ex: rota `/register` → `register.page.js`, `registerPage`.
+  - API: usa o recurso do endpoint. Ex: endpoint `/users` → `users.service.js`, `usersService`, `users.spec.js`.
+  - Nunca: `cadastro.page.js`, `usuarioService`, `registerService` para endpoint `/users`.
 - Clareza importa mais que tamanho do nome. Seja descritivo.
 - Use padrões Page/Service Objects e Fixtures já estabelecidos.
 
 ## Nomes e Prefixos
-- Arquivos: `[tela/contexto].[tipo].js` (`login.page.js`, `cadastro.data.js`, `usuario.service.js`).
+- Arquivos: `[feature/recurso].[tipo].js` (`register.page.js`, `register.service.js`, `register.data.js`).
 - Prefixos visuais nas pages: `input*`, `botao*`, `link*`, `lista*`, `modal*`, `loader*`, `checkbox*`, `feedback*`.
 - Métodos preferencialmente como funções assíncronas padrão.
 
@@ -148,8 +152,8 @@ async validarMensagemErro(mensagem) {
 | Chave de conjunto parametrizado | `[dominio][Cenário]` | `conflitoCadastro`, `erroLogin` |
 | Entrada dentro de conjunto | `{ descricao, dadosTeste }` | — |
 
-- Dados são importados diretamente no spec (`import dadosRegister from './data/register.data.js'`), não via fixture.
-- Fixtures carregam apenas pages e estado de contexto (ex: conta autenticada).
+- Dados são sempre injetados via fixture — spec nunca importa arquivos de dados diretamente.
+- Fixtures carregam pages, services e dados de teste.
 - Nunca use nomes genéricos como `dados`, `casos` ou `lista`.
 - O nome deve comunicar domínio: `conflitoCadastro` deixa claro que são dados que causam conflito no cadastro.
 
@@ -168,21 +172,42 @@ async validarMensagemErro(mensagem) {
 - Sempre importar `{ test }` do arquivo `.fixture.js`, nunca direto do npm `@playwright`.
 - Hierarquia via `describe()`. Para workflows grandes em APIs iterativas, fragmentar via `test.step()`.
 
-### `for` fora do `test()` — testes parametrizados
-Quando múltiplos casos testam **o mesmo comportamento com dados diferentes**, use um `for` **dentro do `describe()` mas fora do `test()`**. Cada iteração gera um `test()` independente com nome descritivo — o Playwright recomenda esse padrão pois cada caso vira uma entrada separada no relatório, com retry, trace e screenshot próprios.
+### Tags obrigatórias
+Todo teste deve ter tags para permitir filtragem por camada e tipo. Tags aplicadas via segundo argumento do `test()` e `test.describe()`.
 
-Os dados do loop devem ser importados **diretamente no spec** no nível de módulo (fixtures não estão acessíveis fora de `test()`).
+| Tag | Onde aplicar | O que significa |
+|---|---|---|
+| `@frontend` | `describe` de specs frontend | Testes de UI via browser |
+| `@api` | `describe` de specs de API | Testes de chamada HTTP |
+| `@contrato` | `describe` de specs de API | Valida contrato de resposta |
+| `@smoke` | `test` de happy path | Caminho feliz, roda rápido |
+| `@regressao` | `test` de cenários de erro e navegação | Cobertura mais ampla |
+| `@negativo` | `test` de falha esperada | Cenário onde o sistema deve rejeitar |
 
 ```js
-import dadosRegister from './data/register.data.js';
+test.describe('Register', {tag: ['@frontend']}, () => {
+  test('deve cadastrar com sucesso', {tag: ['@smoke']}, async ({ registerPage }) => { ... });
+  test('deve exibir erro com dados duplicados', {tag: ['@regressao', '@negativo']}, async ({ registerPage }) => { ... });
+});
+```
 
-test.describe('Register', () => {
-  test.beforeEach(async ({ registerPage }) => {
-    await registerPage.abrirPagina(); // roda para cada test gerado pelo for
-  });
+Filtragem via CLI:
+```bash
+npx playwright test --grep @smoke
+npx playwright test --grep @api
+npx playwright test --grep @negativo
+```
 
+### `for` + `test.step()` — testes parametrizados
+Quando múltiplos casos testam **o mesmo comportamento com dados diferentes**, use um único `test()` com `for` interno e cada iteração dentro de `test.step()`. Vale para frontend e API — padrão unificado.
+
+Dados sempre vêm da **fixture**, nunca de import direto no spec.
+
+```js
+test('deve exibir erro com dados já existentes', async ({ registerPage, dadosRegister }) => {
   for (const { descricao, dadosTeste } of dadosRegister.conflitoCadastro) {
-    test(`deve exibir erro ao tentar cadastrar — ${descricao}`, async ({ registerPage }) => {
+    await test.step(descricao, async () => {
+      await registerPage.abrirPagina();
       await registerPage.cadastrar(dadosTeste);
       await registerPage.validarErroExibido();
     });
@@ -190,7 +215,7 @@ test.describe('Register', () => {
 });
 ```
 
-> **Regra**: `for` parametrizador fica dentro de `describe()`, nunca dentro de `test()`. Dados de loop vêm de import direto no spec, não de fixture. `beforeEach` já é reaproveitado automaticamente por cada test gerado.
+> **Regra**: `for` fica dentro de `test()`, nunca no escopo do `describe()`. Cada iteração obrigatoriamente envolve um `test.step()` nomeado. Nenhum spec importa dados diretamente — sempre via fixture.
 
 ## Massa de Dados (`*.data.js`)
 - Previsibilidade total.
