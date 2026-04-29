@@ -4,9 +4,11 @@ import {UsersService} from '../services/users.service.js';
 import {UsersLoginService} from '../services/users-login.service.js';
 import {ProfilesService} from '../services/profiles.service.js';
 import {UserService} from '../services/user.service.js';
+import {ArticlesService} from '../services/articles.service.js';
 import dadosRegister from '../tests/api/users/data/register.data.js';
 import dadosLogin from '../tests/api/users/data/login.data.js';
 import dadosUser from '../tests/api/user/data/user.data.js';
+import dadosArticles from '../tests/api/articles/data/articles.data.js';
 
 export const test = base.extend({
     usersService: async ({request}, use) => {
@@ -25,8 +27,16 @@ export const test = base.extend({
         await use(new UserService(request));
     },
 
+    articlesService: async ({request}, use) => {
+        await use(new ArticlesService(request));
+    },
+
     dadosUser: async ({}, use) => {
         await use(dadosUser);
+    },
+
+    dadosArticles: async ({}, use) => {
+        await use(dadosArticles);
     },
 
     dadosRegister: async ({}, use) => {

@@ -5,9 +5,11 @@ import {LoginPage} from '../pages/login.page.js';
 import {NavbarPage} from '../pages/navbar.page.js';
 import {ProfilePage} from '../pages/profile.page.js';
 import {SettingsPage} from '../pages/settings.page.js';
+import {EditorPage} from '../pages/editor.page.js';
 import dadosRegister from '../tests/frontend/data/register.data.js';
 import dadosLogin from '../tests/frontend/data/login.data.js';
 import dadosSettings from '../tests/frontend/data/settings.data.js';
+import dadosEditor from '../tests/frontend/data/editor.data.js';
 
 export const test = base.extend({
     registerPage: async ({page}, use) => {
@@ -32,6 +34,14 @@ export const test = base.extend({
 
     dadosSettings: async ({}, use) => {
         await use(dadosSettings);
+    },
+
+    editorPage: async ({page}, use) => {
+        await use(new EditorPage(page));
+    },
+
+    dadosEditor: async ({}, use) => {
+        await use(dadosEditor);
     },
 
     dadosRegister: async ({}, use) => {

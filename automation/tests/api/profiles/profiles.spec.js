@@ -1,6 +1,18 @@
 import {test} from '../../../fixtures/api.fixture.js';
 
-test.describe('API — /profiles/:username/follow', {tag: ['@api', '@contrato']}, () => {
+test.describe('API — /profiles', {tag: ['@api', '@contrato']}, () => {
+
+    test('deve retornar 200 com contrato do perfil', {tag: ['@smoke']}, async ({profilesService}) => {
+        await profilesService.obterPerfil('rafael');
+        await profilesService.validarStatus(200);
+        await profilesService.validarContratoPerfil();
+    });
+
+    test('deve retornar 200 com following false quando não autenticado', {tag: ['@regressao']}, async ({profilesService}) => {
+        await profilesService.obterPerfil('rafael');
+        await profilesService.validarStatus(200);
+        await profilesService.validarNaoSeguindo();
+    });
 
     test('deve seguir usuário e retornar 200 com following true', {tag: ['@smoke']}, async ({profilesService, contaAutenticada, outroUsuario}) => {
         await profilesService.seguir(outroUsuario.username, contaAutenticada.token);
