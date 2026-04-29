@@ -1,14 +1,14 @@
 import {expect} from '@playwright/test';
 
-export class UsersService {
+export class UsersLoginService {
     constructor(request) {
         this.request = request;
         this.response = null;
         this.responseBody = null;
     }
 
-    async cadastrar(dados) {
-        this.response = await this.request.post('/users', {
+    async logar(dados) {
+        this.response = await this.request.post('/users/login', {
             data: {user: dados},
         });
         this.responseBody = await this.response.json();
@@ -18,7 +18,7 @@ export class UsersService {
         expect(this.response.status()).toBe(statusEsperado);
     }
 
-    async validarContratoUser() {
+    async validarContratoUserLogin() {
         expect(this.responseBody.user).toBeDefined();
         expect(this.responseBody.user.email).toBeDefined();
         expect(this.responseBody.user.username).toBeDefined();

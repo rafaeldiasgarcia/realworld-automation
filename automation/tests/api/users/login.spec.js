@@ -1,41 +1,41 @@
 import {test} from '../../../fixtures/api.fixture.js';
 
-test.describe('API — POST /users/login', () => {
+test.describe('API — POST /users/login', {tag: ['@api', '@contrato']}, () => {
 
-    test('deve retornar 200 ao logar com credenciais válidas', async ({usersService, dadosLogin}) => {
+    test('deve retornar 200 ao logar com credenciais válidas', {tag: ['@smoke']}, async ({usersLoginService, dadosLogin}) => {
 
-        await usersService.logar(dadosLogin.valido);
-        await usersService.validarStatus(200);
-        await usersService.validarContratoUser();
+        await usersLoginService.logar(dadosLogin.valido);
+        await usersLoginService.validarStatus(200);
+        await usersLoginService.validarContratoUserLogin();
     });
 
-    test('deve retornar 401 — credenciais inválidas', async ({usersService, dadosLogin}) => {
+    test('deve retornar 401 — credenciais inválidas', {tag: ['@regressao', '@negativo']}, async ({usersLoginService, dadosLogin}) => {
 
         for (const {descricao, dadosTeste} of dadosLogin.credenciaisInvalidas) {
             await test.step(descricao, async () => {
 
-                await usersService.logar(dadosTeste);
-                await usersService.validarStatus(401);
+                await usersLoginService.logar(dadosTeste);
+                await usersLoginService.validarStatus(401);
             });
         }
     });
 
-    test('deve retornar 422 com erro no campo correto — campos obrigatórios ausentes', async ({usersService, dadosLogin}) => {
+    test('deve retornar 422 com erro no campo correto — campos obrigatórios ausentes', {tag: ['@regressao', '@negativo']}, async ({usersLoginService, dadosLogin}) => {
 
         for (const {descricao, dadosTeste, campoErro} of dadosLogin.camposAusentes) {
             await test.step(descricao, async () => {
 
-                await usersService.logar(dadosTeste);
-                await usersService.validarStatus(422);
-                await usersService.validarErroNoCampo(campoErro);
+                await usersLoginService.logar(dadosTeste);
+                await usersLoginService.validarStatus(422);
+                await usersLoginService.validarErroNoCampo(campoErro);
             });
         }
     });
 
-    test('deve retornar 422 com erro no campo email — email com formato inválido', async ({usersService, dadosLogin}) => {
+    test('deve retornar 422 com erro no campo email — email com formato inválido', {tag: ['@regressao', '@negativo']}, async ({usersLoginService, dadosLogin}) => {
 
-        await usersService.logar(dadosLogin.emailInvalido);
-        await usersService.validarStatus(422);
-        await usersService.validarErroNoCampo('email');
+        await usersLoginService.logar(dadosLogin.emailInvalido);
+        await usersLoginService.validarStatus(422);
+        await usersLoginService.validarErroNoCampo('email');
     });
 });
