@@ -2,6 +2,7 @@ import {test as base, expect} from '@playwright/test';
 import {RegisterPage} from '../pages/register.page.js';
 import {LoginPage} from '../pages/login.page.js';
 import {NavbarPage} from '../pages/navbar.page.js';
+import {ProfilePage} from '../pages/profile.page.js';
 import dadosRegister from '../tests/frontend/data/register.data.js';
 import dadosLogin from '../tests/frontend/data/login.data.js';
 
@@ -16,6 +17,10 @@ export const test = base.extend({
 
     navbarPage: async ({page}, use) => {
         await use(new NavbarPage(page));
+    },
+
+    profilePage: async ({page}, use) => {
+        await use(new ProfilePage(page));
     },
 
     dadosRegister: async ({}, use) => {
