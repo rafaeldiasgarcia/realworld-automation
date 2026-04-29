@@ -3,8 +3,10 @@ import {faker} from '@faker-js/faker';
 import {UsersService} from '../services/users.service.js';
 import {UsersLoginService} from '../services/users-login.service.js';
 import {ProfilesService} from '../services/profiles.service.js';
+import {UserService} from '../services/user.service.js';
 import dadosRegister from '../tests/api/users/data/register.data.js';
 import dadosLogin from '../tests/api/users/data/login.data.js';
+import dadosUser from '../tests/api/user/data/user.data.js';
 
 export const test = base.extend({
     usersService: async ({request}, use) => {
@@ -17,6 +19,14 @@ export const test = base.extend({
 
     profilesService: async ({request}, use) => {
         await use(new ProfilesService(request));
+    },
+
+    userService: async ({request}, use) => {
+        await use(new UserService(request));
+    },
+
+    dadosUser: async ({}, use) => {
+        await use(dadosUser);
     },
 
     dadosRegister: async ({}, use) => {
