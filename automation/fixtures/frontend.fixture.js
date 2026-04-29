@@ -4,8 +4,10 @@ import {RegisterPage} from '../pages/register.page.js';
 import {LoginPage} from '../pages/login.page.js';
 import {NavbarPage} from '../pages/navbar.page.js';
 import {ProfilePage} from '../pages/profile.page.js';
+import {SettingsPage} from '../pages/settings.page.js';
 import dadosRegister from '../tests/frontend/data/register.data.js';
 import dadosLogin from '../tests/frontend/data/login.data.js';
+import dadosSettings from '../tests/frontend/data/settings.data.js';
 
 export const test = base.extend({
     registerPage: async ({page}, use) => {
@@ -22,6 +24,14 @@ export const test = base.extend({
 
     profilePage: async ({page}, use) => {
         await use(new ProfilePage(page));
+    },
+
+    settingsPage: async ({page}, use) => {
+        await use(new SettingsPage(page));
+    },
+
+    dadosSettings: async ({}, use) => {
+        await use(dadosSettings);
     },
 
     dadosRegister: async ({}, use) => {

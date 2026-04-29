@@ -32,4 +32,9 @@ export class NavbarPage {
         await expect(this.linkSignIn).not.toBeVisible();
         await expect(this.linkSignUp).not.toBeVisible();
     }
+
+    async navegarParaSettings() {
+        await this.linkSettings.click();
+        await expect(this.page).toHaveURL('/settings');
+    }
 }
