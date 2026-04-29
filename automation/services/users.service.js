@@ -14,11 +14,18 @@ export class UsersService {
         this.responseBody = await this.response.json();
     }
 
+    async logar(dados) {
+        this.response = await this.request.post('/users/login', {
+            data: {user: dados},
+        });
+        this.responseBody = await this.response.json();
+    }
+
     async validarStatus(statusEsperado) {
         expect(this.response.status()).toBe(statusEsperado);
     }
 
-    async validarContratoCadastro() {
+    async validarContratoUser() {
         expect(this.responseBody.user).toBeDefined();
         expect(this.responseBody.user.email).toBeDefined();
         expect(this.responseBody.user.username).toBeDefined();

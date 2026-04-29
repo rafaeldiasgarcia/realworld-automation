@@ -1,14 +1,19 @@
 import {test as base, expect} from '@playwright/test';
 import {UsersService} from '../services/users.service.js';
-import dadosUsers from '../tests/api/data/users.data.js';
+import dadosRegister from '../tests/api/users/data/register.data.js';
+import dadosLogin from '../tests/api/users/data/login.data.js';
 
 export const test = base.extend({
     usersService: async ({request}, use) => {
         await use(new UsersService(request));
     },
 
-    dadosUsers: async ({}, use) => {
-        await use(dadosUsers);
+    dadosRegister: async ({}, use) => {
+        await use(dadosRegister);
+    },
+
+    dadosLogin: async ({}, use) => {
+        await use(dadosLogin);
     },
 });
 
