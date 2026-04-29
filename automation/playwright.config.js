@@ -10,7 +10,7 @@ const TIMEOUTS = {
 export default defineConfig({
   testDir: './tests',
 
-  fullyParallel: false,
+  fullyParallel: true,
 
   forbidOnly: !!process.env.CI,
 
