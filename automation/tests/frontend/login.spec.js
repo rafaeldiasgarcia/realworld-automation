@@ -2,6 +2,7 @@ import {test} from '../../fixtures/frontend.fixture.js';
 
 test.describe('Login', {tag: ['@frontend']}, () => {
     test.beforeEach(async ({loginPage}) => {
+
         await loginPage.abrirPagina();
     });
 
