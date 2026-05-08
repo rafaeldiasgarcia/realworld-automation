@@ -6,6 +6,7 @@ import {NavbarPage} from '../pages/navbar.page.js';
 import {ProfilePage} from '../pages/profile.page.js';
 import {SettingsPage} from '../pages/settings.page.js';
 import {EditorPage} from '../pages/editor.page.js';
+import {ArticlePage} from '../pages/article.page.js';
 import {UsersService} from '../services/users.service.js';
 import {UserService} from '../services/user.service.js';
 import {ArticlesService} from '../services/articles.service.js';
@@ -58,6 +59,10 @@ export const test = base.extend({
 
     editorPage: async ({page}, use) => {
         await use(new EditorPage(page));
+    },
+
+    articlePage: async ({page}, use) => {
+        await use(new ArticlePage(page));
     },
 
     usersService: async ({request}, use) => {
