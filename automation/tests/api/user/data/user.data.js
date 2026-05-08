@@ -7,4 +7,10 @@ export default {
     emailInvalido: {
         email: 'emailinvalido',
     },
+    usernameVazio: {
+        username: '',
+    },
+    emailVazio: {
+        email: '',
+    },
 };
