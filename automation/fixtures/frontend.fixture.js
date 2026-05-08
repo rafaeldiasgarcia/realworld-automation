@@ -1,5 +1,4 @@
 import {test as base, expect} from '@playwright/test';
-import {faker} from '@faker-js/faker';
 import {RegisterPage} from '../pages/register.page.js';
 import {LoginPage} from '../pages/login.page.js';
 import {HomePage} from '../pages/home.page.js';
@@ -7,65 +6,29 @@ import {NavbarPage} from '../pages/navbar.page.js';
 import {ProfilePage} from '../pages/profile.page.js';
 import {SettingsPage} from '../pages/settings.page.js';
 import {EditorPage} from '../pages/editor.page.js';
+import {ArticlePage} from '../pages/article.page.js';
+import {UsersService} from '../services/users.service.js';
+import {UserService} from '../services/user.service.js';
+import {ArticlesService} from '../services/articles.service.js';
+import {ProfilesService} from '../services/profiles.service.js';
+import {criarDadosAtualizacaoUsuario, criarDadosUsuario} from '../tests/factories/users.factory.js';
+import {criarComentarioArticle, criarDadosPost} from '../tests/factories/articles.factory.js';
 import dadosRegister from '../tests/frontend/data/register.data.js';
 import dadosLogin from '../tests/frontend/data/login.data.js';
 import dadosSettings from '../tests/frontend/data/settings.data.js';
 import dadosEditor from '../tests/frontend/data/editor.data.js';
 
-const SENHA_PADRAO = 'Test@1234';
+const API_BASE_URL = 'http://localhost:8080';
 
-function gerarDadosUsuario() {
-    const username = `test${faker.string.alphanumeric(8).toLowerCase()}`;
-    return {
-        username,
-        email: `${username}@example.com`,
-        password: SENHA_PADRAO,
-    };
+async function criarUsuario(usersService, userService) {
+    const dadosUsuario = criarDadosUsuario();
+    const user = await usersService.cadastrarERetornar(dadosUsuario);
+    return userService.atualizarERetornar(criarDadosAtualizacaoUsuario(dadosUsuario.username), user.token);
 }
 
-async function criarUsuario(request) {
-    const dadosUsuario = gerarDadosUsuario();
-    const response = await request.post('http://localhost:8080/users', {
-        data: {user: dadosUsuario},
-    });
-    if (!response.ok()) {
-        throw new Error(`Falha ao criar usuário para teste: ${response.status()}`);
-    }
-    const {user} = await response.json();
-
-    const updateResponse = await request.put('http://localhost:8080/user', {
-        headers: {Authorization: `Token ${user.token}`},
-        data: {user: {
-            bio: faker.lorem.sentence(),
-            image: `https://i.pravatar.cc/150?u=${dadosUsuario.username}`,
-        }},
-    });
-    if (!updateResponse.ok()) {
-        throw new Error(`Falha ao atualizar usuário para teste: ${updateResponse.status()}`);
-    }
-    const {user: usuarioAtualizado} = await updateResponse.json();
-
-    return usuarioAtualizado;
-}
-
-async function criarPost(request, token) {
-    const tag = `tag-${faker.string.alphanumeric(8).toLowerCase()}`;
-    const dadosArtigo = {
-        title: `Artigo ${faker.string.alphanumeric(10)}`,
-        description: faker.lorem.sentence(),
-        body: faker.lorem.paragraphs(2),
-        tagList: [tag],
-    };
-
-    const response = await request.post('http://localhost:8080/articles', {
-        headers: {Authorization: `Token ${token}`},
-        data: {article: dadosArtigo},
-    });
-    if (!response.ok()) {
-        throw new Error(`Falha ao criar post para teste da Home: ${response.status()}`);
-    }
-    const {article} = await response.json();
-
+async function criarPost(articlesService, token) {
+    const {dados, tag} = criarDadosPost();
+    const article = await articlesService.criarERetornar(dados, token);
     return {...article, tag};
 }
 
@@ -94,12 +57,32 @@ export const test = base.extend({
         await use(new SettingsPage(page));
     },
 
-    dadosSettings: async ({}, use) => {
-        await use(dadosSettings);
-    },
-
     editorPage: async ({page}, use) => {
         await use(new EditorPage(page));
+    },
+
+    articlePage: async ({page}, use) => {
+        await use(new ArticlePage(page));
+    },
+
+    usersService: async ({request}, use) => {
+        await use(new UsersService(request, API_BASE_URL));
+    },
+
+    userService: async ({request}, use) => {
+        await use(new UserService(request, API_BASE_URL));
+    },
+
+    articlesService: async ({request}, use) => {
+        await use(new ArticlesService(request, API_BASE_URL));
+    },
+
+    profilesService: async ({request}, use) => {
+        await use(new ProfilesService(request, API_BASE_URL));
+    },
+
+    dadosSettings: async ({}, use) => {
+        await use(dadosSettings);
     },
 
     dadosEditor: async ({}, use) => {
@@ -114,35 +97,41 @@ export const test = base.extend({
         await use(dadosLogin);
     },
 
-    postCriado: async ({request}, use) => {
-        const user = await criarUsuario(request);
-        const post = await criarPost(request, user.token);
+    postCriado: async ({usersService, userService, articlesService}, use) => {
+        const user = await criarUsuario(usersService, userService);
+        const post = await criarPost(articlesService, user.token);
 
         await use(post);
     },
 
-    postDeAutorSeguido: async ({request, contaAutenticada}, use) => {
-        const autor = await criarUsuario(request);
-        const post = await criarPost(request, autor.token);
-        const response = await request.post(`http://localhost:8080/profiles/${autor.username}/follow`, {
-            headers: {Authorization: `Token ${contaAutenticada.token}`},
-        });
-        if (!response.ok()) {
-            throw new Error(`Falha ao seguir autor para teste da Home: ${response.status()}`);
-        }
+    postDoUsuarioAutenticado: async ({articlesService, contaAutenticada}, use) => {
+        const post = await criarPost(articlesService, contaAutenticada.token);
+
+        await use(post);
+    },
+
+    comentarioArticle: async ({}, use) => {
+        await use(criarComentarioArticle());
+    },
+
+    postDeAutorSeguido: async ({usersService, userService, articlesService, profilesService, contaAutenticada}, use) => {
+        const autor = await criarUsuario(usersService, userService);
+        const post = await criarPost(articlesService, autor.token);
+        await profilesService.seguir(autor.username, contaAutenticada.token);
+        await profilesService.validarStatus(200);
 
         await use({...post, autor});
     },
 
     // Cria um usuário aleatório via API para testes que precisam de um segundo usuário
-    outroUsuario: async ({request}, use) => {
-        const user = await criarUsuario(request);
+    outroUsuario: async ({usersService, userService}, use) => {
+        const user = await criarUsuario(usersService, userService);
         await use(user);
     },
 
-    // Loga via API e injeta o token no localStorage antes de qualquer navegação
-    contaAutenticada: async ({page, request}, use) => {
-        const user = await criarUsuario(request);
+    // Cria usuário via API e injeta o token no localStorage antes de qualquer navegação
+    contaAutenticada: async ({page, usersService, userService}, use) => {
+        const user = await criarUsuario(usersService, userService);
 
         await page.addInitScript(token => {
             window.localStorage.setItem('jwtToken', token);

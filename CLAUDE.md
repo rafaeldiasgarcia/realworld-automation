@@ -241,6 +241,7 @@ Tabelas em PostgreSQL: `empresa`, `usuario`, `categoria`, `transacao`, `auditori
 ## Permissões e Escopo
 - **Escopo Restrito:** Aja SÓ na exata tarefa exigida. Sem devaneios/refatorações colaterais se não ditas. Priorizar infraestrutura/padrão vigente da source (CLAUDE.md).
 - **Ações Proibidas (sem aprovação via chat):** instanciar novas dependências, criar pastas exóticas de pattern estranho ao fixado, refatorar código legado em lote sem request formal via user manual, comittar no git.
+- **Execução de Testes Playwright:** NÃO rodar testes Playwright automaticamente. Quando precisar validar comportamento real, informar o comando exato para o usuário executar, aguardar o retorno/print/erro e continuar a partir dele. Checagens leves como `node --check` são permitidas.
 
 ## Fluxo
 1. Ler regras listadas do path docs rules base (`**/*.md`). Analisar a raiz.

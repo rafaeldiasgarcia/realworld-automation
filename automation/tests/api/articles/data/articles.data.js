@@ -12,4 +12,15 @@ export default {
         body: faker.lorem.paragraphs(1),
         tagList: [],
     },
+    atualizacao: {
+        title: faker.lorem.sentence(),
+        description: faker.lorem.sentence(),
+        body: faker.lorem.paragraphs(2),
+    },
+    comentario: {
+        body: faker.lorem.sentence(),
+    },
+    comentarioSemCorpo: {
+        body: '',
+    },
 };

@@ -1,17 +1,31 @@
 import {expect} from '@playwright/test';
 
 export class UsersService {
-    constructor(request) {
+    constructor(request, baseUrl = '') {
         this.request = request;
+        this.baseUrl = baseUrl;
         this.response = null;
         this.responseBody = null;
     }
 
     async cadastrar(dados) {
-        this.response = await this.request.post('/users', {
+        this.response = await this.request.post(this.endpoint('/users'), {
             data: {user: dados},
         });
         this.responseBody = await this.response.json();
+    }
+
+    endpoint(path) {
+        return `${this.baseUrl}${path}`;
+    }
+
+    async cadastrarERetornar(dados) {
+        await this.cadastrar(dados);
+        if (!this.response.ok()) {
+            throw new Error(`Falha ao criar usuário para teste: ${this.response.status()}`);
+        }
+
+        return this.responseBody.user;
     }
 
     async validarStatus(statusEsperado) {
