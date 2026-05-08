@@ -1,25 +1,39 @@
 import {expect} from '@playwright/test';
 
 export class UserService {
-    constructor(request) {
+    constructor(request, baseUrl = '') {
         this.request = request;
+        this.baseUrl = baseUrl;
         this.response = null;
         this.responseBody = null;
     }
 
     async obter(token) {
-        this.response = await this.request.get('/user', {
+        this.response = await this.request.get(this.endpoint('/user'), {
             headers: {Authorization: `Token ${token}`},
         });
         this.responseBody = await this.response.json();
     }
 
     async atualizar(dados, token) {
-        this.response = await this.request.put('/user', {
+        this.response = await this.request.put(this.endpoint('/user'), {
             headers: {Authorization: `Token ${token}`},
             data: {user: dados},
         });
         this.responseBody = await this.response.json();
+    }
+
+    endpoint(path) {
+        return `${this.baseUrl}${path}`;
+    }
+
+    async atualizarERetornar(dados, token) {
+        await this.atualizar(dados, token);
+        if (!this.response.ok()) {
+            throw new Error(`Falha ao atualizar usuário para teste: ${this.response.status()}`);
+        }
+
+        return this.responseBody.user;
     }
 
     async validarStatus(status) {
