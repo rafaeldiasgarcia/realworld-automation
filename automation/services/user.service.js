@@ -8,19 +8,32 @@ export class UserService {
         this.responseBody = null;
     }
 
-    async obter(token) {
+    async obter(token = null) {
         this.response = await this.request.get(this.endpoint('/user'), {
-            headers: {Authorization: `Token ${token}`},
+            headers: this.obterHeadersAutenticacao(token),
         });
-        this.responseBody = await this.response.json();
+        await this.salvarResponseBody();
     }
 
-    async atualizar(dados, token) {
+    async atualizar(dados, token = null) {
         this.response = await this.request.put(this.endpoint('/user'), {
-            headers: {Authorization: `Token ${token}`},
+            headers: this.obterHeadersAutenticacao(token),
             data: {user: dados},
         });
-        this.responseBody = await this.response.json();
+        await this.salvarResponseBody();
+    }
+
+    obterHeadersAutenticacao(token) {
+        return token ? {Authorization: `Token ${token}`} : {};
+    }
+
+    async salvarResponseBody() {
+        const texto = await this.response.text();
+        try {
+            this.responseBody = texto ? JSON.parse(texto) : null;
+        } catch {
+            this.responseBody = null;
+        }
     }
 
     endpoint(path) {

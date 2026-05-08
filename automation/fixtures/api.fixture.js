@@ -47,6 +47,10 @@ export const test = base.extend({
         await use(new HomeService(request));
     },
 
+    usernameInexistente: async ({}, use) => {
+        await use(criarDadosUsuario().username);
+    },
+
     dadosUser: async ({}, use) => {
         await use(dadosUser);
     },
@@ -93,6 +97,39 @@ export const test = base.extend({
         await profilesService.validarStatus(200);
 
         await use({...post, autor});
+    },
+
+    postFavoritado: async ({usersService, articlesService, homeService, contaAutenticada}, use) => {
+        const autor = await criarUsuario(usersService);
+        const post = await criarPost(articlesService, autor.token);
+        await homeService.favoritarPost(post.slug, contaAutenticada.token);
+        await homeService.validarStatus(200);
+
+        await use(post);
+    },
+
+    postsParaPaginacao: async ({usersService, articlesService}, use) => {
+        const autor = await criarUsuario(usersService);
+        const primeiroPost = await criarPost(articlesService, autor.token);
+        const segundoPost = await criarPost(articlesService, autor.token);
+
+        await use([primeiroPost, segundoPost]);
+    },
+
+    comentarioDeOutroUsuario: async ({usersService, articlesService, dadosArticles}, use) => {
+        const autor = await criarUsuario(usersService);
+        const comentarista = await criarUsuario(usersService);
+        const post = await criarPost(articlesService, autor.token);
+
+        await articlesService.comentar(post.slug, dadosArticles.comentario, comentarista.token);
+        await articlesService.validarStatus(201);
+
+        await use({
+            post,
+            comentarista,
+            comentario: dadosArticles.comentario,
+            comentarioId: articlesService.comentarioId,
+        });
     },
 });
 

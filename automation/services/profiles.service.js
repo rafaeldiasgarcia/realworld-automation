@@ -10,25 +10,38 @@ export class ProfilesService {
 
     async obterPerfil(username) {
         this.response = await this.request.get(this.endpoint(`/profiles/${username}`));
-        this.responseBody = await this.response.json();
+        await this.salvarResponseBody();
     }
 
-    async seguir(username, token) {
+    async seguir(username, token = null) {
         this.response = await this.request.post(this.endpoint(`/profiles/${username}/follow`), {
-            headers: {Authorization: `Token ${token}`},
+            headers: this.obterHeadersAutenticacao(token),
         });
-        this.responseBody = await this.response.json();
+        await this.salvarResponseBody();
     }
 
-    async deixarDeSeguir(username, token) {
+    async deixarDeSeguir(username, token = null) {
         this.response = await this.request.delete(this.endpoint(`/profiles/${username}/follow`), {
-            headers: {Authorization: `Token ${token}`},
+            headers: this.obterHeadersAutenticacao(token),
         });
-        this.responseBody = await this.response.json();
+        await this.salvarResponseBody();
     }
 
     endpoint(path) {
         return `${this.baseUrl}${path}`;
+    }
+
+    obterHeadersAutenticacao(token) {
+        return token ? {Authorization: `Token ${token}`} : {};
+    }
+
+    async salvarResponseBody() {
+        const texto = await this.response.text();
+        try {
+            this.responseBody = texto ? JSON.parse(texto) : null;
+        } catch {
+            this.responseBody = null;
+        }
     }
 
     async validarStatus(status) {

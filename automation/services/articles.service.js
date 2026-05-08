@@ -9,12 +9,12 @@ export class ArticlesService {
         this.comentarioId = null;
     }
 
-    async criar(dados, token) {
+    async criar(dados, token = null) {
         this.response = await this.request.post(this.endpoint('/articles'), {
-            headers: {Authorization: `Token ${token}`},
+            headers: this.obterHeadersAutenticacao(token),
             data: {article: dados},
         });
-        this.responseBody = await this.response.json();
+        await this.salvarResponseBody();
     }
 
     async criarERetornar(dados, token) {
@@ -30,18 +30,18 @@ export class ArticlesService {
         this.response = await this.request.get(this.endpoint(`/articles/${slug}`), {
             headers: this.obterHeadersAutenticacao(token),
         });
-        this.responseBody = await this.response.json();
+        await this.salvarResponseBody();
     }
 
-    async atualizar(slug, dados, token) {
+    async atualizar(slug, dados, token = null) {
         this.response = await this.request.put(this.endpoint(`/articles/${slug}`), {
             headers: this.obterHeadersAutenticacao(token),
             data: {article: dados},
         });
-        this.responseBody = await this.response.json();
+        await this.salvarResponseBody();
     }
 
-    async deletar(slug, token) {
+    async deletar(slug, token = null) {
         this.response = await this.request.delete(this.endpoint(`/articles/${slug}`), {
             headers: this.obterHeadersAutenticacao(token),
         });
@@ -52,20 +52,24 @@ export class ArticlesService {
         this.response = await this.request.get(this.endpoint(`/articles/${slug}/comments`), {
             headers: this.obterHeadersAutenticacao(token),
         });
-        this.responseBody = await this.response.json();
+        await this.salvarResponseBody();
     }
 
-    async comentar(slug, dados, token) {
+    async comentar(slug, dados, token = null) {
         this.response = await this.request.post(this.endpoint(`/articles/${slug}/comments`), {
             headers: this.obterHeadersAutenticacao(token),
             data: {comment: dados},
         });
-        this.responseBody = await this.response.json();
-        this.comentarioId = this.responseBody.comment?.id;
+        await this.salvarResponseBody();
+        this.comentarioId = this.responseBody?.comment?.id;
     }
 
-    async deletarComentario(slug, token) {
-        this.response = await this.request.delete(this.endpoint(`/articles/${slug}/comments/${this.comentarioId}`), {
+    async deletarComentario(slug, token = null) {
+        await this.deletarComentarioPorId(slug, this.comentarioId, token);
+    }
+
+    async deletarComentarioPorId(slug, comentarioId, token = null) {
+        this.response = await this.request.delete(this.endpoint(`/articles/${slug}/comments/${comentarioId}`), {
             headers: this.obterHeadersAutenticacao(token),
         });
         this.responseBody = null;
@@ -77,6 +81,15 @@ export class ArticlesService {
 
     obterHeadersAutenticacao(token) {
         return token ? {Authorization: `Token ${token}`} : {};
+    }
+
+    async salvarResponseBody() {
+        const texto = await this.response.text();
+        try {
+            this.responseBody = texto ? JSON.parse(texto) : null;
+        } catch {
+            this.responseBody = null;
+        }
     }
 
     async validarStatus(status) {
@@ -94,6 +107,10 @@ export class ArticlesService {
         expect(typeof article.slug).toBe('string');
         expect(typeof article.title).toBe('string');
         expect(Array.isArray(article.tagList)).toBe(true);
+    }
+
+    async validarTagListDoArtigo(tagsEsperadas) {
+        expect(this.responseBody.article.tagList).toEqual(tagsEsperadas);
     }
 
     async validarDadosDoArtigo(artigoEsperado) {
@@ -142,6 +159,10 @@ export class ArticlesService {
 
     async validarComentarioCriado(dadosComentario) {
         expect(this.responseBody.comment.body).toBe(dadosComentario.body);
+    }
+
+    async validarAutorDoComentario(username) {
+        expect(this.responseBody.comment.author.username).toBe(username);
     }
 
     async validarComentarioNaLista(dadosComentario) {
