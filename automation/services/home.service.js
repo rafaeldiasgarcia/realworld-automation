@@ -1,46 +1,94 @@
 import {expect} from '@playwright/test';
 
 export class HomeService {
-    constructor(request) {
+    constructor(request, baseUrl = '') {
         this.request = request;
+        this.baseUrl = baseUrl;
         this.response = null;
         this.responseBody = null;
     }
 
-    async listarPosts() {
-        this.response = await this.request.get('/articles');
-        this.responseBody = await this.response.json();
-    }
-
-    async listarPostsPorTag(tag) {
-        this.response = await this.request.get(`/articles?tag=${encodeURIComponent(tag)}`);
-        this.responseBody = await this.response.json();
-    }
-
-    async listarFeed(token) {
-        this.response = await this.request.get('/articles/feed', {
-            headers: {Authorization: `Token ${token}`},
+    async listarPosts(token = null) {
+        this.response = await this.request.get(this.endpoint('/articles'), {
+            headers: this.obterHeadersAutenticacao(token),
         });
-        this.responseBody = await this.response.json();
+        await this.salvarResponseBody();
+    }
+
+    async listarPostsPorTag(tag, token = null) {
+        await this.listarPostsComFiltros({tag}, token);
+    }
+
+    async listarPostsPorAutor(username, token = null) {
+        await this.listarPostsComFiltros({author: username}, token);
+    }
+
+    async listarPostsFavoritadosPor(username, token = null) {
+        await this.listarPostsComFiltros({favorited: username}, token);
+    }
+
+    async listarPostsPaginados({limit, offset}, token = null) {
+        await this.listarPostsComFiltros({limit, offset}, token);
+    }
+
+    async listarPostsComFiltros(filtros, token = null) {
+        const params = new URLSearchParams();
+        for (const [chave, valor] of Object.entries(filtros)) {
+            if (valor !== undefined && valor !== null) {
+                params.set(chave, String(valor));
+            }
+        }
+
+        const queryString = params.toString();
+        const endpoint = queryString ? `/articles?${queryString}` : '/articles';
+
+        this.response = await this.request.get(this.endpoint(endpoint), {
+            headers: this.obterHeadersAutenticacao(token),
+        });
+        await this.salvarResponseBody();
+    }
+
+    async listarFeed(token = null) {
+        this.response = await this.request.get(this.endpoint('/articles/feed'), {
+            headers: this.obterHeadersAutenticacao(token),
+        });
+        await this.salvarResponseBody();
     }
 
     async listarTags() {
-        this.response = await this.request.get('/tags');
-        this.responseBody = await this.response.json();
+        this.response = await this.request.get(this.endpoint('/tags'));
+        await this.salvarResponseBody();
     }
 
-    async favoritarPost(slug, token) {
-        this.response = await this.request.post(`/articles/${slug}/favorite`, {
-            headers: {Authorization: `Token ${token}`},
+    async favoritarPost(slug, token = null) {
+        this.response = await this.request.post(this.endpoint(`/articles/${slug}/favorite`), {
+            headers: this.obterHeadersAutenticacao(token),
         });
-        this.responseBody = await this.response.json();
+        await this.salvarResponseBody();
     }
 
-    async desfavoritarPost(slug, token) {
-        this.response = await this.request.delete(`/articles/${slug}/favorite`, {
-            headers: {Authorization: `Token ${token}`},
+    async desfavoritarPost(slug, token = null) {
+        this.response = await this.request.delete(this.endpoint(`/articles/${slug}/favorite`), {
+            headers: this.obterHeadersAutenticacao(token),
         });
-        this.responseBody = await this.response.json();
+        await this.salvarResponseBody();
+    }
+
+    endpoint(path) {
+        return `${this.baseUrl}${path}`;
+    }
+
+    obterHeadersAutenticacao(token) {
+        return token ? {Authorization: `Token ${token}`} : {};
+    }
+
+    async salvarResponseBody() {
+        const texto = await this.response.text();
+        try {
+            this.responseBody = texto ? JSON.parse(texto) : null;
+        } catch {
+            this.responseBody = null;
+        }
     }
 
     async validarStatus(status) {
@@ -99,6 +147,20 @@ export class HomeService {
         const {articles} = this.responseBody;
         expect(articles.length).toBeGreaterThan(0);
         expect(articles.every(article => article.author.username === username)).toBe(true);
+    }
+
+    async validarTodosPostsFavoritados() {
+        const {articles} = this.responseBody;
+        expect(articles.length).toBeGreaterThan(0);
+        expect(articles.every(article => article.favorited === true)).toBe(true);
+    }
+
+    async validarLimiteRespeitado(limit) {
+        expect(this.responseBody.articles.length).toBeLessThanOrEqual(limit);
+    }
+
+    async validarQuantidadeTotalMaiorOuIgualA(quantidade) {
+        expect(this.responseBody.articlesCount).toBeGreaterThanOrEqual(quantidade);
     }
 
     async validarPostFavoritado(favoritesCount) {
