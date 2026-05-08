@@ -224,6 +224,146 @@ test('deve exibir erro com dados já existentes', async ({ registerPage, dadosRe
 
 ---
 
+# Roadmap de Cobertura
+
+## Cobertura Atual
+- **Frontend por tela (UI funcional)**: `register`, `login`, `navbar`, `home`, `editor`, `article`, `profile` e `settings`.
+- **API de contrato/integração**: `POST /users`, `POST /users/login`, `GET/PUT /user`, `GET/POST/DELETE /profiles/:username/follow`, `GET /tags`, `GET /articles`, `GET /articles/feed`, favoritos, artigos e comentários.
+- **Jornadas E2E ponta a ponta**: ainda precisam ser planejadas e implementadas. Os testes frontend atuais rodam no browser, mas são nichados por tela/componente de fluxo, não jornadas completas atravessando várias telas.
+- **Massa dinâmica**: usuários, posts e comentários criados via fixtures/factories, sem dependência de registros fixos quando o teste precisa de isolamento.
+
+## Tipos de Teste no Projeto
+- **Frontend por tela (UI funcional)**: valida comportamento observável de uma tela ou rota específica. Ex: Home filtra por tag, Article comenta, Settings atualiza bio.
+- **API de contrato/integração**: valida status HTTP, contrato de resposta, regras de autorização e persistência observável via endpoints.
+- **E2E ponta a ponta**: valida uma jornada real de usuário atravessando múltiplas telas e a API por trás, do início ao fim. Deve ser menor em quantidade, focado em fluxos críticos, e pode reaproveitar fixtures apenas para preparar estado que não faz parte do objetivo da jornada.
+
+## Próximas Coberturas Frontend por Tela
+1. **Editor — edição completa de artigo**
+   - Abrir `/editor/:slug` como autor.
+   - Validar campos preenchidos com dados do artigo.
+   - Alterar título, descrição, corpo e tags.
+   - Publicar e validar detalhe atualizado.
+
+2. **Editor — proteção de rota**
+   - Visitante ao acessar `/editor` deve ser redirecionado para `/login`.
+   - Visitante ao acessar `/editor/:slug` deve ser redirecionado para `/login`.
+
+3. **Article — fluxos negativos e permissões**
+   - Visitante ao favoritar artigo deve ser redirecionado para cadastro ou login, conforme comportamento do produto.
+   - Visitante ao tentar comentar deve usar os links de login/cadastro exibidos no prompt.
+   - Usuário autenticado não autor não deve ver botões de editar/deletar.
+   - Autor não deve ver botão de follow no próprio artigo.
+
+4. **Profile — listas de posts**
+   - Perfil deve listar posts criados pelo usuário.
+   - Aba `Favorited Articles` deve listar posts favoritados pelo usuário.
+   - Perfil sem posts deve exibir estado vazio correto.
+   - Visitante deve conseguir abrir perfil público e navegar nas abas sem autenticação.
+
+5. **Settings — atualização completa**
+   - Atualizar username e validar reflexo no navbar/perfil.
+   - Atualizar imagem e validar avatar renderizado.
+   - Atualizar email válido e manter sessão autenticada.
+   - Validar proteção da rota `/settings` para visitante.
+
+6. **Home — paginação e estados vazios**
+   - Validar navegação entre páginas quando houver mais artigos que o limite.
+   - Validar estado vazio de `Your Feed` quando usuário não segue autores.
+   - Validar troca entre `Your Feed`, `Global Feed` e tag ativa sem manter estado visual incorreto.
+
+## Próximas Jornadas E2E Ponta a Ponta
+1. **Cadastro até publicação**
+   - Visitante cadastra uma nova conta.
+   - Acessa `New Article`.
+   - Publica artigo completo.
+   - Valida redirecionamento para detalhe do artigo.
+   - Volta para Home e valida artigo no Global Feed.
+
+2. **Login até interação com artigo**
+   - Usuário faz login.
+   - Encontra artigo no Global Feed.
+   - Abre detalhe.
+   - Favorita, comenta e remove comentário.
+   - Desfavorita o artigo.
+
+3. **Autor cria, edita e remove artigo**
+   - Usuário autenticado cria artigo.
+   - Acessa o detalhe como autor.
+   - Edita conteúdo pelo `/editor/:slug`.
+   - Valida alteração no detalhe.
+   - Remove o artigo e valida retorno/ausência na Home ou perfil.
+
+4. **Follow alimentando Your Feed**
+   - Usuário A cria artigo.
+   - Usuário B acessa perfil do usuário A e segue.
+   - Usuário B abre `Your Feed`.
+   - Valida artigo do usuário A no feed.
+   - Usuário B deixa de seguir e valida atualização esperada do feed.
+
+5. **Perfil e favoritos**
+   - Usuário cria ou encontra artigo.
+   - Favorita o artigo.
+   - Acessa seu perfil.
+   - Abre aba `Favorited Articles`.
+   - Valida artigo favoritado na lista.
+
+6. **Settings com sessão ativa**
+   - Usuário faz login.
+   - Atualiza bio/imagem/username quando aplicável.
+   - Navega pelo navbar para perfil.
+   - Valida dados atualizados refletidos fora da tela de Settings.
+   - Realiza logout e valida estado de visitante.
+
+## Próximas Coberturas API
+1. **Autorização obrigatória**
+   - `GET /user` sem token deve retornar `401`.
+   - `PUT /user` sem token deve retornar `401`.
+   - `POST /articles` sem token deve retornar `401`.
+   - `GET /articles/feed` sem token deve retornar `401`.
+   - `POST/DELETE /articles/:slug/favorite` sem token deve retornar `401`.
+   - `POST /articles/:slug/comments` sem token deve retornar `401`.
+   - `DELETE /articles/:slug/comments/:id` sem token deve retornar `401`.
+   - `POST/DELETE /profiles/:username/follow` sem token deve retornar `401`.
+
+2. **Recursos inexistentes**
+   - `GET /articles/:slug` inexistente deve retornar `404`.
+   - `PUT /articles/:slug` inexistente deve retornar `404`.
+   - `DELETE /articles/:slug` inexistente deve retornar `404`.
+   - `GET /profiles/:username` inexistente deve retornar `404`.
+   - `GET /articles/:slug/comments` para artigo inexistente deve retornar `404`.
+   - `DELETE /articles/:slug/comments/:id` inexistente deve retornar `404`.
+
+3. **Filtros e paginação de artigos**
+   - `GET /articles?author=` deve retornar somente artigos do autor.
+   - `GET /articles?favorited=` deve retornar somente artigos favoritados pelo usuário informado.
+   - `GET /articles?limit=&offset=` deve respeitar paginação e `articlesCount`.
+   - Combinações de filtros devem manter contrato e lista coerente.
+
+4. **Favoritos de artigo**
+   - Favoritar artigo já favoritado deve manter estado consistente.
+   - Desfavoritar artigo não favoritado deve manter estado consistente.
+   - Favoritar artigo inexistente deve retornar `404`.
+
+5. **Comentários**
+   - Deletar comentário de outro usuário deve retornar `403`.
+   - Comentar em artigo inexistente deve retornar `404`.
+   - Comentário criado deve preservar autor correto no contrato.
+
+6. **Validações de payload**
+   - `POST /articles` sem `description` deve retornar `422`.
+   - `POST /articles` sem `body` deve retornar `422`.
+   - `POST /articles` com `tagList` ausente ou vazio deve manter contrato esperado.
+   - `PUT /user` com username vazio deve retornar `422`.
+   - `PUT /user` com email vazio deve retornar `422`.
+
+## Bugs Conhecidos Durante Automação
+- Testes devem apontar para o comportamento esperado do produto, mesmo quando o bug já é conhecido e o teste falhar hoje.
+- Quando uma cobertura nova expuser bug real, manter o teste falhando pelo comportamento correto esperado e abrir issue antes do PR.
+- Se o bug já tiver issue aberta, referenciar a issue no PR em vez de alterar o teste para aceitar o comportamento atual.
+- Não duplicar o mesmo comportamento em múltiplos testes só para comprovar o mesmo bug; prefira uma cobertura clara por camada/fluxo relevante.
+
+---
+
 # Banco de Dados
 
 Tabelas em PostgreSQL: `empresa`, `usuario`, `categoria`, `transacao`, `auditoria`.
